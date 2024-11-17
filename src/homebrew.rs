@@ -225,9 +225,25 @@ pub async fn install_formula_version(name: &str, version: Option<&str>) -> Resul
         install_homebrew().await?;
     }
 
+    // For custom taps, we can install directly
+    if name.matches('/').count() == 2 {
+        println!("Installing {} via Homebrew...", name.cyan());
+
+        let status = Command::new(if cfg!(windows) { "brew.exe" } else { "brew" })
+            .args(["install", name])
+            .status()?;
+
+        if !status.success() {
+            anyhow::bail!("Failed to install {}", name);
+        }
+
+        println!("{} {} successfully", "Installed".green(), name);
+        return Ok(());
+    }
+
+    // Regular formula installation
     if let Some(formula) = search_formula(name).await? {
         let install_name = formula.get_install_name(version);
-
         println!("Installing {} via Homebrew...", install_name.cyan());
 
         let status = Command::new(if cfg!(windows) { "brew.exe" } else { "brew" })
@@ -237,6 +253,8 @@ pub async fn install_formula_version(name: &str, version: Option<&str>) -> Resul
         if !status.success() {
             anyhow::bail!("Failed to install {}", install_name);
         }
+
+        println!("{} {} successfully", "Installed".green(), install_name);
     } else {
         anyhow::bail!("Package {} not found", name);
     }
@@ -245,45 +263,70 @@ pub async fn install_formula_version(name: &str, version: Option<&str>) -> Resul
 }
 
 pub async fn search_formula(name: &str) -> Result<Option<Formula>> {
-    let client = reqwest::Client::new();
+    // Check if the name includes a tap
+    let parts: Vec<&str> = name.split('/').collect();
+    match parts.len() {
+        3 => {
+            // Format: tap_user/tap_name/formula (e.g., oven-sh/bun/bun)
+            let tap = format!("{}/{}", parts[0], parts[1]);
+            let formula_name = parts[2];
 
-    let url = format!("https://formulae.brew.sh/api/formula/{}.json", name);
-    let response = client.get(&url).send().await;
+            // First ensure the tap is added
+            let tap_status = Command::new(if cfg!(windows) { "brew.exe" } else { "brew" })
+                .args(["tap", &tap])
+                .status()?;
 
-    match response {
-        Ok(resp) => {
-            if resp.status().is_success() {
-                match resp.json().await {
-                    Ok(formula) => Ok(Some(formula)),
-                    Err(e) => {
-                        println!("Warning: Error parsing package information: {}", e);
-                        Ok(None)
-                    }
+            if !tap_status.success() {
+                anyhow::bail!("Failed to add tap {}", tap);
+            }
+
+            // Try to get formula info
+            let output = Command::new(if cfg!(windows) { "brew.exe" } else { "brew" })
+                .args(["info", "--json=v2", name])
+                .output()?;
+
+            if output.status.success() {
+                #[derive(Deserialize)]
+                struct BrewResponse {
+                    formulae: Vec<Formula>,
                 }
+
+                let response: BrewResponse = serde_json::from_slice(&output.stdout)?;
+                Ok(response.formulae.into_iter().next())
             } else {
                 Ok(None)
             }
         }
-        Err(_) => Ok(None),
+        1 => {
+            // Regular formula from main homebrew/core tap
+            let client = reqwest::Client::new();
+            let url = format!("https://formulae.brew.sh/api/formula/{}.json", name);
+            let response = client.get(&url).send().await;
+
+            match response {
+                Ok(resp) => {
+                    if resp.status().is_success() {
+                        let formula: Formula = resp.json().await?;
+                        Ok(Some(formula))
+                    } else {
+                        Ok(None)
+                    }
+                }
+                Err(_) => Ok(None),
+            }
+        }
+        _ => {
+            println!(
+                "{}",
+                "Invalid package format. Use either 'package' or 'user/tap/package'".yellow()
+            );
+            Ok(None)
+        }
     }
 }
 
 pub async fn install_formula(name: &str) -> Result<()> {
-    // Check if Homebrew is installed
-    if !is_homebrew_installed().await {
-        install_homebrew().await?;
-    }
-
-    println!("Installing {} via Homebrew...", name.cyan());
-
-    let status = match Platform::current() {
-        Platform::Windows => Command::new("brew.exe").args(["install", name]).status()?,
-        _ => Command::new("brew").args(["install", name]).status()?,
-    };
-
-    if !status.success() {
-        anyhow::bail!("Failed to install {}", name);
-    }
+    install_formula_version(name, None).await?;
 
     Ok(())
 }

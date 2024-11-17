@@ -64,9 +64,9 @@ async fn main() -> Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
-      Some(Commands::Uninstall { package }) => {
-                  package_manager::uninstall_package(&package).await?;
-              }
+        Some(Commands::Uninstall { package }) => {
+            package_manager::uninstall_package(&package).await?;
+        }
         Some(Commands::Install { package }) => {
             // Parse package name and version
             let (name, version) = parse_package_spec(&package);
