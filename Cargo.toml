@@ -1,0 +1,19 @@
+[package]
+name = "bert"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+clap = { version = "4.4", features = ["derive"] }
+tokio = { version = "1.35", features = ["full"] }
+anyhow = { version = "1.0", features = ["backtrace"] }
+dirs = "5.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+reqwest = { version = "0.11", features = ["json"] }
+which = "5.0"
+shellwords = "1.1"
+colored = "2.1"
+dialoguer = "0.11"
+home = "0.5"
+platform-dirs = "0.3"
