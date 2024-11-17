@@ -13,10 +13,12 @@ BERT-CLI is a friendly cross-platform package assistant built on top of Homebrew
 
 ## Installation
 
-To install BERT-CLI, you need to have Rust and Cargo installed on your system. You can install BERT-CLI using Cargo:
-
 ```bash
-cargo install bert-cli
+# Download the binary for MacOS
+curl -L -o /usr/local/bin/bert "https://github.com/michaelessiet/bert-cli/releases/download/v0.1.3/bert-darwin-amd64"
+
+# Make it executable
+chmod +x /usr/local/bin/bert
 ```
 
 ## Usage
