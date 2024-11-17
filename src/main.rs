@@ -47,6 +47,11 @@ enum Commands {
         #[arg(trailing_var_arg = true)]
         packages: Vec<String>,
     },
+    /// Uninstall a package
+    Uninstall {
+        /// Name of the package to uninstall
+        package: String,
+    },
     /// List installed packages
     List,
 }
@@ -59,6 +64,9 @@ async fn main() -> Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
+      Some(Commands::Uninstall { package }) => {
+                  package_manager::uninstall_package(&package).await?;
+              }
         Some(Commands::Install { package }) => {
             // Parse package name and version
             let (name, version) = parse_package_spec(&package);

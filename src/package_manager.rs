@@ -1,6 +1,45 @@
 use anyhow::Result;
 use colored::*;
 use std::path::PathBuf;
+use std::process::Command;
+
+pub async fn uninstall_package(name: &str) -> Result<()> {
+    if !crate::homebrew::is_homebrew_installed().await {
+        anyhow::bail!("Homebrew is not installed");
+    }
+
+    // First check if the package is installed
+    let installed = Command::new(if cfg!(windows) { "brew.exe" } else { "brew" })
+        .args(["list", "--versions", name])
+        .output()?;
+
+    if !installed.status.success() || installed.stdout.is_empty() {
+        println!("{} is not installed", name.yellow());
+        return Ok(());
+    }
+
+    // Show current version before uninstalling
+    let version = String::from_utf8_lossy(&installed.stdout);
+    println!("Found installed package: {}", version.trim());
+
+    println!("Uninstalling {}...", name.cyan());
+
+    let status = Command::new(if cfg!(windows) { "brew.exe" } else { "brew" })
+        .args(["uninstall", name])
+        .status()?;
+
+    if !status.success() {
+        anyhow::bail!("Failed to uninstall {}", name);
+    }
+
+    // Run cleanup
+    Command::new(if cfg!(windows) { "brew.exe" } else { "brew" })
+        .args(["cleanup", name])
+        .status()?;
+
+    println!("{} {} successfully", "Uninstalled".green(), name);
+    Ok(())
+}
 
 pub async fn install_package(package: &str) -> Result<()> {
     println!("Searching for package {}...", package.cyan());
