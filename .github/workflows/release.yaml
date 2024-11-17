@@ -37,14 +37,14 @@ jobs:
         os: [ubuntu-latest, macos-latest]
         include:
           - os: macos-latest
-            artifact_name: goon
-            asset_name: goon-darwin-amd64
+            artifact_name: bert
+            asset_name: bert-darwin-amd64
           - os: ubuntu-latest
-            artifact_name: goon
-            asset_name: goon-linux-amd64
+            artifact_name: bert
+            asset_name: bert-linux-amd64
           # - os: windows-latest
-          #   artifact_name: goon.exe
-          #   asset_name: goon-windows-amd64.exe
+          #   artifact_name: bert.exe
+          #   asset_name: bert-windows-amd64.exe
 
     steps:
       - uses: actions/checkout@v4

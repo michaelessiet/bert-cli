@@ -24,7 +24,7 @@ impl Platform {
     pub fn bin_path() -> PathBuf {
         match Self::current() {
             Platform::Windows => {
-                let local_app_data = platform_dirs::AppDirs::new(Some("goon"), false)
+                let local_app_data = platform_dirs::AppDirs::new(Some("bert"), false)
                     .unwrap()
                     .data_dir;
                 local_app_data.join("bin")
