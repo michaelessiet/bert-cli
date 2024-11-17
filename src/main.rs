@@ -156,18 +156,6 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-// Error handling utilities
-fn print_error(err: &anyhow::Error) {
-    eprintln!("{} {}", "Error:".red().bold(), err);
-
-    // Print error chain
-    let mut source = err.source();
-    while let Some(err) = source {
-        eprintln!("Caused by: {}", err);
-        source = err.source();
-    }
-}
-
 fn parse_package_spec(spec: &str) -> (&str, Option<&str>) {
     if let Some(idx) = spec.find('@') {
         let (name, version) = spec.split_at(idx);

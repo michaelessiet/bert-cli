@@ -1,6 +1,5 @@
 use anyhow::Result;
 use colored::*;
-use std::path::PathBuf;
 use std::process::Command;
 
 pub async fn uninstall_package(name: &str) -> Result<()> {
@@ -60,17 +59,13 @@ pub async fn install_package(package: &str) -> Result<()> {
     Ok(())
 }
 
-pub fn get_bin_path() -> PathBuf {
-    PathBuf::from("/usr/local/bin")
-}
-
 pub async fn install_package_version(name: &str, version: Option<&str>) -> Result<()> {
     println!("Searching for package {} 🐕", name.cyan());
 
     if let Some(formula) = crate::homebrew::search_formula(name).await? {
         crate::homebrew::display_package_info(&formula);
 
-        if let Some(v) = version {
+        if let Some(_v) = version {
             if formula.versioned_formulae.is_empty() {
                 println!(
                     "\n{}",

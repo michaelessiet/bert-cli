@@ -4,10 +4,7 @@ use colored::*;
 use dialoguer::{theme::ColorfulTheme, Confirm};
 use serde::Deserialize;
 use std::io::Write;
-use std::path::PathBuf;
 use std::process::Command;
-
-const HOMEBREW_API_URL: &str = "https://formulae.brew.sh/api/formula";
 
 #[cfg(target_os = "windows")]
 const HOMEBREW_INSTALL_URL: &str =
@@ -35,10 +32,6 @@ pub struct Formula {
 pub struct Versions {
     #[serde(default)]
     pub stable: String,
-    #[serde(default)]
-    pub head: Option<String>, // Changed to Option
-    #[serde(default)]
-    pub bottle: bool,
 }
 
 impl Formula {
@@ -124,13 +117,13 @@ pub async fn is_homebrew_installed() -> bool {
     }
 }
 
-pub async fn get_homebrew_prefix() -> Result<PathBuf> {
-    match Platform::current() {
-        Platform::Windows => Ok(PathBuf::from("C:\\Program Files\\Homebrew")),
-        Platform::MacOS => Ok(PathBuf::from("/usr/local")),
-        Platform::Linux => Ok(PathBuf::from("/home/linuxbrew/.linuxbrew")),
-    }
-}
+// pub async fn get_homebrew_prefix() -> Result<PathBuf> {
+//     match Platform::current() {
+//         Platform::Windows => Ok(PathBuf::from("C:\\Program Files\\Homebrew")),
+//         Platform::MacOS => Ok(PathBuf::from("/usr/local")),
+//         Platform::Linux => Ok(PathBuf::from("/home/linuxbrew/.linuxbrew")),
+//     }
+// }
 
 pub async fn install_homebrew() -> Result<()> {
     println!("{}", "Homebrew is required but not installed.".yellow());
