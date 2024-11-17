@@ -15,7 +15,7 @@ BERT-CLI is a friendly cross-platform package assistant built on top of Homebrew
 
 ```bash
 # Download the binary for MacOS
-curl -L -o /usr/local/bin/bert "https://github.com/michaelessiet/bert-cli/releases/download/v0.1.3/bert-darwin-amd64"
+curl -L -o /usr/local/bin/bert "https://github.com/michaelessiet/bert-cli/releases/download/latest/bert-darwin-amd64"
 
 # Make it executable
 chmod +x /usr/local/bin/bert
