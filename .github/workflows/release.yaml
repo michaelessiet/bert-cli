@@ -6,6 +6,11 @@ on:
     tags:
       - 'v*'
 
+permissions:
+  contents: write
+  packages: write
+  issues: write
+
 jobs:
   create-release:
     runs-on: ubuntu-latest
