@@ -72,7 +72,7 @@ impl Formula {
                     println!("No version information available.");
                 }
 
-                println!("{}", "Installing latest version instead.".yellow());
+                println!("{}", "Installing latest version instead 🐕".yellow());
                 self.name.clone()
             }
         } else {
@@ -143,7 +143,7 @@ pub async fn install_homebrew() -> Result<()> {
         anyhow::bail!("Homebrew is required to continue.");
     }
 
-    println!("Installing Homebrew...");
+    println!("Installing Homebrew 🐕");
 
     match Platform::current() {
         Platform::Windows => {
@@ -227,7 +227,7 @@ pub async fn install_formula_version(name: &str, version: Option<&str>) -> Resul
 
     // For custom taps, we can install directly
     if name.matches('/').count() == 2 {
-        println!("Installing {} via Homebrew...", name.cyan());
+        println!("Installing {} via Homebrew 🐕", name.cyan());
 
         let status = Command::new(if cfg!(windows) { "brew.exe" } else { "brew" })
             .args(["install", name])
@@ -244,7 +244,7 @@ pub async fn install_formula_version(name: &str, version: Option<&str>) -> Resul
     // Regular formula installation
     if let Some(formula) = search_formula(name).await? {
         let install_name = formula.get_install_name(version);
-        println!("Installing {} via Homebrew...", install_name.cyan());
+        println!("Installing {} via Homebrew 🐕", install_name.cyan());
 
         let status = Command::new(if cfg!(windows) { "brew.exe" } else { "brew" })
             .args(["install", &install_name])
@@ -269,7 +269,6 @@ pub async fn search_formula(name: &str) -> Result<Option<Formula>> {
         3 => {
             // Format: tap_user/tap_name/formula (e.g., oven-sh/bun/bun)
             let tap = format!("{}/{}", parts[0], parts[1]);
-            let formula_name = parts[2];
 
             // First ensure the tap is added
             let tap_status = Command::new(if cfg!(windows) { "brew.exe" } else { "brew" })

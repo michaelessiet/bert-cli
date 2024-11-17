@@ -9,16 +9,15 @@ mod homebrew;
 mod package_manager;
 mod platform;
 
-/// Goon: A cross-platform package manager built on top of Homebrew
 #[derive(Parser)]
 #[command(
     name = "bert",
     author = "Michael Essiet <emsaa2002@gmail.com>",
     version = "0.1.0",
-    about = "A cross-platform package manager built on top of Homebrew",
-    long_about = "Bert is a package manager that leverages Homebrew's package repository to provide \
-                  cross-platform package management. It automatically handles installation of missing \
-                  commands and manages Homebrew installation. Heavily inspired by Bert Solana's #1 dog."
+    about = "A friendly cross-platform package assistant built on top of Homebrew",
+    long_about = "Bert 🐕 is a friendly package assistant that leverages Homebrew's package repository to provide \
+                  cross-platform package management. He automatically handles installation of missing \
+                  commands and manages Homebrew installations. Heavily inspired by Bert Solana's #1 dog Bertram the Pomeranian!"
 )]
 struct Cli {
     #[command(subcommand)]
@@ -70,7 +69,7 @@ async fn main() -> Result<()> {
         Some(Commands::Install { package }) => {
             // Parse package name and version
             let (name, version) = parse_package_spec(&package);
-            println!("Installing package: {}", name.cyan());
+            println!("Installing package: {} 🐕", name.cyan());
             if let Some(ver) = version {
                 println!("Version: {}", ver.cyan());
             }
@@ -80,7 +79,7 @@ async fn main() -> Result<()> {
                 .with_context(|| format!("Failed to install package: {}", package))?;
         }
         Some(Commands::Search { query }) => {
-            println!("Searching for packages matching: {}", query.cyan());
+            println!("Searching for packages matching: {} 🐕", query.cyan());
             if let Some(formula) = homebrew::search_formula(&query).await? {
                 homebrew::display_package_info(&formula);
             } else {
@@ -89,7 +88,7 @@ async fn main() -> Result<()> {
         }
         Some(Commands::Update { packages }) => {
             if packages.is_empty() {
-                println!("{}", "Updating Homebrew...".cyan());
+                println!("{}", "Updating Homebrew 🐕".cyan());
                 let status = Command::new(if cfg!(windows) { "brew.exe" } else { "brew" })
                     .arg("update")
                     .status()?;
@@ -116,7 +115,7 @@ async fn main() -> Result<()> {
             };
 
             for package in packages_to_update {
-                println!("Updating {}", package.cyan());
+                println!("Updating {} 🐕", package.cyan());
                 let status = Command::new(if cfg!(windows) { "brew.exe" } else { "brew" })
                     .args(["upgrade", &package])
                     .status()?;

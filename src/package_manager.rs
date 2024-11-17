@@ -42,7 +42,7 @@ pub async fn uninstall_package(name: &str) -> Result<()> {
 }
 
 pub async fn install_package(package: &str) -> Result<()> {
-    println!("Searching for package {}...", package.cyan());
+    println!("Searching for package {} 🐕", package.cyan());
 
     if let Some(formula) = crate::homebrew::search_formula(package).await? {
         println!("Found package: {}", formula.name.green());
@@ -65,7 +65,7 @@ pub fn get_bin_path() -> PathBuf {
 }
 
 pub async fn install_package_version(name: &str, version: Option<&str>) -> Result<()> {
-    println!("Searching for package {}...", name.cyan());
+    println!("Searching for package {} 🐕", name.cyan());
 
     if let Some(formula) = crate::homebrew::search_formula(name).await? {
         crate::homebrew::display_package_info(&formula);
@@ -77,7 +77,7 @@ pub async fn install_package_version(name: &str, version: Option<&str>) -> Resul
                     "Note: This package doesn't have version-specific formulae available.".yellow()
                 );
                 println!(
-                    "Installing latest version ({}) instead...",
+                    "Installing latest version ({}) instead 🐕",
                     formula.versions.stable
                 );
             }
