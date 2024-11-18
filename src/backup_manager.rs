@@ -4,7 +4,7 @@ use colored::*;
 use dirs::home_dir;
 use serde::{Deserialize, Serialize};
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::process::Command;
 
 #[derive(Serialize, Deserialize)]
@@ -202,7 +202,7 @@ fn get_backup_path(custom_path: Option<&str>) -> Result<PathBuf> {
 }
 
 fn get_backup_dir() -> Result<PathBuf> {
-    let mut backup_dir = home_dir()
+    let backup_dir = home_dir()
         .ok_or_else(|| anyhow::anyhow!("Could not determine home directory"))?
         .join(".bert")
         .join("backups");
