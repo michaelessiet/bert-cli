@@ -132,11 +132,7 @@ fn get_platform_asset_name() -> String {
     }
     #[cfg(target_os = "macos")]
     {
-        if cfg!(target_arch = "aarch64") {
-            "bert-darwin-arm64".to_string()
-        } else {
-            "bert-darwin-amd64".to_string()
-        }
+        "bert-darwin-amd64".to_string()
     }
     #[cfg(target_os = "windows")]
     {
