@@ -4,6 +4,7 @@ use colored::*;
 use std::process::Command;
 
 // Import our local modules
+mod backup_manager;
 mod command_handler;
 mod homebrew;
 mod package_manager;
@@ -60,6 +61,19 @@ enum Commands {
     List,
     /// Update bert to the latest version
     SelfUpdate,
+    /// Create a backup of installed formulas and casks
+    Backup {
+        /// Optional custom path for the backup file
+        #[arg(short, long)]
+        output: Option<String>,
+    },
+
+    /// Restore packages from a backup file
+    Restore {
+        /// Optional path to the backup file (uses latest backup if not specified)
+        #[arg(short, long)]
+        input: Option<String>,
+    },
 }
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -70,6 +84,13 @@ async fn main() -> Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
+        // ... other command matches ...
+        Some(Commands::Backup { output }) => {
+            backup_manager::create_backup(output.as_deref()).await?;
+        }
+        Some(Commands::Restore { input }) => {
+            backup_manager::restore_backup(input.as_deref()).await?;
+        }
         Some(Commands::SelfUpdate) => {
             self_update::self_update().await?;
         }

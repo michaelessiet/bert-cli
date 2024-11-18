@@ -55,12 +55,44 @@ bert search <query>
 bert list
 ```
 
+### Install a Cask
+
+```bash
+bert install --cask firefox
+```
+
+### Backup Installed Packages to JSON
+
+```bash
+# backs up to ~/.bert/backups/
+bert backup
+
+# backs up to a custom location
+bert backup -o /path/to/backup.json
+```
+
+### Restore Installed Packages from JSON
+
+```bash
+# backup from ~/.bert/backups/
+bert restore
+
+# backup from a custom location
+bert restore /path/to/backup.json
+```
+
 ### Execute a Command
 
 If a command is not found, BERT-CLI will attempt to install it using Homebrew:
 
 ```bash
 bert <command> [args...]
+```
+
+### Update Bert
+
+```bash
+bert self-update
 ```
 
 ## Configuration
