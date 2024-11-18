@@ -37,11 +37,11 @@ pub struct Formula {
 #[derive(Debug, Deserialize, Clone)]
 pub struct Cask {
     pub token: String, // name of the cask
-    pub name: Vec<String>,
+    // pub name: Vec<String>,
     pub desc: Option<String>,
     pub homepage: Option<String>,
     pub version: String,
-    pub url: Option<String>,
+    // pub url: Option<String>,
     pub tap: Option<String>,
 }
 
@@ -49,8 +49,8 @@ pub struct Cask {
 pub struct Versions {
     #[serde(default)]
     pub stable: String,
-    pub head: String,
-    pub bottle: bool,
+    // pub head: String,
+    // pub bottle: bool,
 }
 
 impl Formula {
@@ -371,8 +371,8 @@ pub async fn search_formula(
                                 homepage: cask.homepage,
                                 versions: Versions {
                                     stable: cask.version,
-                                    head: "".to_string(),
-                                    bottle: false,
+                                    // head: "".to_string(),
+                                    // bottle: false,
                                 },
                                 versioned_formulae: vec![],
                                 aliases: vec![],

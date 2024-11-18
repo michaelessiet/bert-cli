@@ -8,12 +8,13 @@ mod command_handler;
 mod homebrew;
 mod package_manager;
 mod platform;
+mod self_update;
 
 #[derive(Parser)]
 #[command(
     name = "bert",
     author = "Michael Essiet <emsaa2002@gmail.com>",
-    version = "0.1.5",
+    version = "0.1.6",
     about = "A friendly cross-platform package assistant built on top of Homebrew",
     long_about = "Bert 🐕 is a friendly package assistant that leverages Homebrew's package repository to provide \
                   cross-platform package management. He automatically handles installation of missing \
@@ -57,6 +58,8 @@ enum Commands {
     },
     /// List installed packages
     List,
+    /// Update bert to the latest version
+    SelfUpdate,
 }
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -67,6 +70,9 @@ async fn main() -> Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
+        Some(Commands::SelfUpdate) => {
+            self_update::self_update().await?;
+        }
         Some(Commands::Uninstall { package }) => {
             package_manager::uninstall_package(&package).await?;
         }
