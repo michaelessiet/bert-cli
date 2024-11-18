@@ -17,7 +17,7 @@ pub async fn handle_command(args: &[String]) -> Result<()> {
         println!("{} not found. Attempting to install 🐕", command.yellow());
 
         // Try to install via homebrew
-        if let Err(e) = crate::package_manager::install_package(command).await {
+        if let Err(e) = crate::package_manager::install_package(command, false).await {
             println!("Failed to install {}: {}", command.red(), e);
             return Ok(());
         }

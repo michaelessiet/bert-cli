@@ -13,6 +13,12 @@ const HOMEBREW_INSTALL_URL: &str =
 const HOMEBREW_INSTALL_URL: &str =
     "https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh";
 
+#[derive(Debug, Clone)]
+pub enum HomebrewPackageType {
+    Formula,
+    Cask,
+}
+
 #[derive(Debug, Deserialize, Clone)]
 pub struct Formula {
     pub name: String,
@@ -29,9 +35,22 @@ pub struct Formula {
 }
 
 #[derive(Debug, Deserialize, Clone)]
+pub struct Cask {
+    pub token: String, // name of the cask
+    pub name: Vec<String>,
+    pub desc: Option<String>,
+    pub homepage: Option<String>,
+    pub version: String,
+    pub url: Option<String>,
+    pub tap: Option<String>,
+}
+
+#[derive(Debug, Deserialize, Clone)]
 pub struct Versions {
     #[serde(default)]
     pub stable: String,
+    pub head: String,
+    pub bottle: bool,
 }
 
 impl Formula {
@@ -74,9 +93,17 @@ impl Formula {
     }
 }
 
-pub fn display_package_info(formula: &Formula) {
+pub fn display_package_info(formula: &Formula, is_cask: bool) {
     println!("\nPackage Information:");
     println!("  Name: {}", formula.name.green());
+    println!(
+        "  Type: {}",
+        if is_cask {
+            "Cask".cyan()
+        } else {
+            "Formula".cyan()
+        }
+    );
     if let Some(desc) = &formula.desc {
         println!("  Description: {}", desc);
     }
@@ -91,21 +118,23 @@ pub fn display_package_info(formula: &Formula) {
     }
 
     println!("\nVersions:");
-    if !formula.versions.stable.is_empty() {
+    if is_cask {
+        println!("  Current: {}", formula.versions.stable);
+    } else {
         println!("  Current: {} (latest)", formula.versions.stable.green());
-    }
 
-    if !formula.versioned_formulae.is_empty() {
-        println!("  Other available versions:");
-        for version in &formula.versioned_formulae {
-            println!("    {}", version.cyan());
+        if !formula.versioned_formulae.is_empty() {
+            println!("  Other available versions:");
+            for version in &formula.versioned_formulae {
+                println!("    {}", version.cyan());
+            }
         }
-    }
 
-    if !formula.aliases.is_empty() {
-        println!("\nAliases:");
-        for alias in &formula.aliases {
-            println!("    {}", alias);
+        if !formula.aliases.is_empty() {
+            println!("\nAliases:");
+            for alias in &formula.aliases {
+                println!("    {}", alias);
+            }
         }
     }
 }
@@ -213,7 +242,11 @@ pub async fn install_homebrew() -> Result<()> {
     Ok(())
 }
 
-pub async fn install_formula_version(name: &str, version: Option<&str>) -> Result<()> {
+pub async fn install_formula_version(
+    name: &str,
+    version: Option<&str>,
+    is_cask: bool,
+) -> Result<()> {
     if !is_homebrew_installed().await {
         install_homebrew().await?;
     }
@@ -235,12 +268,33 @@ pub async fn install_formula_version(name: &str, version: Option<&str>) -> Resul
     }
 
     // Regular formula installation
-    if let Some(formula) = search_formula(name).await? {
+    if let Some(formula) = search_formula(
+        name,
+        if is_cask {
+            Some(HomebrewPackageType::Cask)
+        } else {
+            Some(HomebrewPackageType::Formula)
+        },
+    )
+    .await?
+    {
         let install_name = formula.get_install_name(version);
-        println!("Installing {} via Homebrew 🐕", install_name.cyan());
+
+        println!(
+            "Installing {} via Homebrew{} 🐕",
+            install_name.cyan(),
+            if is_cask { " (cask)" } else { "" }
+        );
+
+        let mut args = if is_cask {
+            vec!["install", "--cask"]
+        } else {
+            vec!["install"]
+        };
+        args.push(&install_name);
 
         let status = Command::new(if cfg!(windows) { "brew.exe" } else { "brew" })
-            .args(["install", &install_name])
+            .args(&args)
             .status()?;
 
         if !status.success() {
@@ -255,7 +309,10 @@ pub async fn install_formula_version(name: &str, version: Option<&str>) -> Resul
     Ok(())
 }
 
-pub async fn search_formula(name: &str) -> Result<Option<Formula>> {
+pub async fn search_formula(
+    name: &str,
+    package_type: Option<HomebrewPackageType>,
+) -> Result<Option<Formula>> {
     // Check if the name includes a tap
     let parts: Vec<&str> = name.split('/').collect();
     match parts.len() {
@@ -292,14 +349,40 @@ pub async fn search_formula(name: &str) -> Result<Option<Formula>> {
         1 => {
             // Regular formula from main homebrew/core tap
             let client = reqwest::Client::new();
-            let url = format!("https://formulae.brew.sh/api/formula/{}.json", name);
+
+            let (api_url, is_cask) = match package_type {
+                Some(HomebrewPackageType::Cask) => ("https://formulae.brew.sh/api/cask", true),
+                _ => ("https://formulae.brew.sh/api/formula", false),
+            };
+
+            let url = format!("{}/{}.json", api_url, name);
             let response = client.get(&url).send().await;
 
             match response {
                 Ok(resp) => {
                     if resp.status().is_success() {
-                        let formula: Formula = resp.json().await?;
-                        Ok(Some(formula))
+                        if is_cask {
+                            let cask: Cask = resp.json().await?;
+                            // Convert Cask to Formula format for consistency
+                            Ok(Some(Formula {
+                                name: cask.token.clone(),
+                                full_name: cask.token,
+                                desc: cask.desc,
+                                homepage: cask.homepage,
+                                versions: Versions {
+                                    stable: cask.version,
+                                    head: "".to_string(),
+                                    bottle: false,
+                                },
+                                versioned_formulae: vec![],
+                                aliases: vec![],
+                                tap: cask.tap,
+                                license: None,
+                            }))
+                        } else {
+                            let formula: Formula = resp.json().await?;
+                            Ok(Some(formula))
+                        }
                     } else {
                         Ok(None)
                     }
@@ -317,8 +400,8 @@ pub async fn search_formula(name: &str) -> Result<Option<Formula>> {
     }
 }
 
-pub async fn install_formula(name: &str) -> Result<()> {
-    install_formula_version(name, None).await?;
+pub async fn install_formula(name: &str, is_cask: bool) -> Result<()> {
+    install_formula_version(name, None, is_cask).await?;
 
     Ok(())
 }

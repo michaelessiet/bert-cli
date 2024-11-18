@@ -23,6 +23,10 @@ struct Cli {
     #[command(subcommand)]
     command: Option<Commands>,
 
+    /// Install as a cask application
+    #[arg(long, global = true)]
+    cask: bool,
+
     /// Command to execute if no subcommand is provided
     #[arg(trailing_var_arg = true)]
     args: Vec<String>,
@@ -74,14 +78,23 @@ async fn main() -> Result<()> {
                 println!("Version: {}", ver.cyan());
             }
 
-            package_manager::install_package_version(name, version)
+            package_manager::install_package_version(name, version, cli.cask)
                 .await
                 .with_context(|| format!("Failed to install package: {}", package))?;
         }
         Some(Commands::Search { query }) => {
             println!("Searching for packages matching: {} 🐕", query.cyan());
-            if let Some(formula) = homebrew::search_formula(&query).await? {
-                homebrew::display_package_info(&formula);
+            if let Some(formula) = homebrew::search_formula(
+                &query,
+                if cli.cask {
+                    Some(homebrew::HomebrewPackageType::Cask)
+                } else {
+                    Some(homebrew::HomebrewPackageType::Formula)
+                },
+            )
+            .await?
+            {
+                homebrew::display_package_info(&formula, cli.cask);
             } else {
                 println!("No packages found matching: {}", query.red());
             }
@@ -129,17 +142,32 @@ async fn main() -> Result<()> {
         }
         Some(Commands::List) => {
             println!("{}", "Installed packages:".cyan());
-            let output = Command::new(if cfg!(windows) { "brew.exe" } else { "brew" })
-                .args(["list", "--versions"])
+            let formula_output = Command::new(if cfg!(windows) { "brew.exe" } else { "brew" })
+                .args(["list", "--versions", "--formula"])
                 .output()?;
 
-            if output.status.success() {
-                let packages = String::from_utf8_lossy(&output.stdout);
+            if formula_output.status.success() {
+                let packages = String::from_utf8_lossy(&formula_output.stdout);
+                println!("{}", "Formulae:".cyan());
                 for package in packages.lines() {
                     println!("  {}", package);
                 }
             } else {
                 println!("{}", "Failed to list packages".red());
+            }
+
+            let cask_output = Command::new(if cfg!(windows) { "brew.exe" } else { "brew" })
+                .args(["list", "--versions", "--cask"])
+                .output()?;
+
+            if cask_output.status.success() {
+                let packages = String::from_utf8_lossy(&cask_output.stdout);
+                println!("{}", "Casks:".cyan());
+                for package in packages.lines() {
+                    println!("  {}", package);
+                }
+            } else {
+                println!("{}", "Failed to list casks".red());
             }
         }
         None => {

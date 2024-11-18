@@ -40,17 +40,26 @@ pub async fn uninstall_package(name: &str) -> Result<()> {
     Ok(())
 }
 
-pub async fn install_package(package: &str) -> Result<()> {
+pub async fn install_package(package: &str, is_cask: bool) -> Result<()> {
     println!("Searching for package {} 🐕", package.cyan());
 
-    if let Some(formula) = crate::homebrew::search_formula(package).await? {
+    if let Some(formula) = crate::homebrew::search_formula(
+        package,
+        if is_cask {
+            Some(crate::homebrew::HomebrewPackageType::Cask)
+        } else {
+            Some(crate::homebrew::HomebrewPackageType::Formula)
+        },
+    )
+    .await?
+    {
         println!("Found package: {}", formula.name.green());
         if let Some(desc) = formula.desc {
             println!("Description: {}", desc);
         }
         println!("Version: {}", formula.versions.stable);
 
-        crate::homebrew::install_formula(&formula.full_name).await?;
+        crate::homebrew::install_formula(&formula.full_name, is_cask).await?;
         println!("Successfully installed {}", package.green());
     } else {
         println!("Package {} not found in Homebrew", package.red());
@@ -59,11 +68,24 @@ pub async fn install_package(package: &str) -> Result<()> {
     Ok(())
 }
 
-pub async fn install_package_version(name: &str, version: Option<&str>) -> Result<()> {
+pub async fn install_package_version(
+    name: &str,
+    version: Option<&str>,
+    is_cask: bool,
+) -> Result<()> {
     println!("Searching for package {} 🐕", name.cyan());
 
-    if let Some(formula) = crate::homebrew::search_formula(name).await? {
-        crate::homebrew::display_package_info(&formula);
+    if let Some(formula) = crate::homebrew::search_formula(
+        name,
+        if is_cask {
+            Some(crate::homebrew::HomebrewPackageType::Cask)
+        } else {
+            Some(crate::homebrew::HomebrewPackageType::Formula)
+        },
+    )
+    .await?
+    {
+        crate::homebrew::display_package_info(&formula, is_cask);
 
         if let Some(_v) = version {
             if formula.versioned_formulae.is_empty() {
@@ -78,7 +100,7 @@ pub async fn install_package_version(name: &str, version: Option<&str>) -> Resul
             }
         }
 
-        crate::homebrew::install_formula_version(name, version).await?;
+        crate::homebrew::install_formula_version(name, version, is_cask).await?;
         println!("Successfully installed {}", name.green());
     } else {
         println!("Package {} not found in Homebrew", name.red());
