@@ -13,7 +13,7 @@ mod platform;
 #[command(
     name = "bert",
     author = "Michael Essiet <emsaa2002@gmail.com>",
-    version = "0.1.4",
+    version = "0.1.5",
     about = "A friendly cross-platform package assistant built on top of Homebrew",
     long_about = "Bert 🐕 is a friendly package assistant that leverages Homebrew's package repository to provide \
                   cross-platform package management. He automatically handles installation of missing \
