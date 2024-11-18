@@ -2,14 +2,14 @@ use anyhow::Result;
 use colored::*;
 use std::process::Command;
 
-pub async fn uninstall_package(name: &str) -> Result<()> {
+pub async fn uninstall_package(name: &str, is_cask: bool) -> Result<()> {
     if !crate::homebrew::is_homebrew_installed().await {
         anyhow::bail!("Homebrew is not installed");
     }
 
     // First check if the package is installed
     let installed = Command::new(if cfg!(windows) { "brew.exe" } else { "brew" })
-        .args(["list", "--versions", name])
+        .args(["list", "--versions", name, if is_cask { "--cask" } else {""}])
         .output()?;
 
     if !installed.status.success() || installed.stdout.is_empty() {
@@ -24,7 +24,7 @@ pub async fn uninstall_package(name: &str) -> Result<()> {
     println!("Uninstalling {}...", name.cyan());
 
     let status = Command::new(if cfg!(windows) { "brew.exe" } else { "brew" })
-        .args(["uninstall", name])
+        .args(["uninstall", name, if is_cask { "--cask" } else {""}])
         .status()?;
 
     if !status.success() {

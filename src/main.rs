@@ -95,7 +95,7 @@ async fn main() -> Result<()> {
             self_update::self_update().await?;
         }
         Some(Commands::Uninstall { package }) => {
-            package_manager::uninstall_package(&package).await?;
+            package_manager::uninstall_package(&package, cli.cask).await?;
         }
         Some(Commands::Install { package }) => {
             // Parse package name and version
