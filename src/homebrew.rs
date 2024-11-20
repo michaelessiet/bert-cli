@@ -430,11 +430,17 @@ pub async fn uninstall_formula(name: &str, is_cask: bool) -> Result<()> {
     let version = String::from_utf8_lossy(&installed.stdout);
     println!("Found installed package: {}", version.trim());
 
-    println!("Uninstalling {}...", name.cyan());
+    println!("Uninstalling {} 🐕", name.cyan());
 
-    let status = Command::new(if cfg!(windows) { "brew.exe" } else { "brew" })
-        .args(["uninstall", name, if is_cask { "--cask" } else { "" }])
-        .status()?;
+    let status = if is_cask {
+        Command::new(if cfg!(windows) { "brew.exe" } else { "brew" })
+            .args(["uninstall", "--cask", name])
+            .status()?
+    } else {
+        Command::new(if cfg!(windows) { "brew.exe" } else { "brew" })
+            .args(["uninstall", name])
+            .status()?
+    };
 
     if !status.success() {
         anyhow::bail!("Failed to uninstall {}", name);
