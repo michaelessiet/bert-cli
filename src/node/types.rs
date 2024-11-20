@@ -6,6 +6,7 @@ pub enum NodePackageManager {
     Npm,
     Yarn,
     Pnpm,
+    Bun
 }
 
 impl NodePackageManager {
@@ -14,6 +15,7 @@ impl NodePackageManager {
             NodePackageManager::Npm => "npm",
             NodePackageManager::Yarn => "yarn",
             NodePackageManager::Pnpm => "pnpm",
+            NodePackageManager::Bun => "bun",
         }
     }
 
@@ -22,6 +24,7 @@ impl NodePackageManager {
             NodePackageManager::Npm => vec!["install", "-g"],
             NodePackageManager::Yarn => vec!["global", "add"],
             NodePackageManager::Pnpm => vec!["add", "-g"],
+            NodePackageManager::Bun => vec!["install", "-g"],
         }
     }
 
@@ -30,6 +33,7 @@ impl NodePackageManager {
             NodePackageManager::Npm => vec!["uninstall", "-g"],
             NodePackageManager::Yarn => vec!["global", "remove"],
             NodePackageManager::Pnpm => vec!["remove", "-g"],
+            NodePackageManager::Bun => vec!["remove", "-g"],
         }
     }
 
@@ -38,6 +42,7 @@ impl NodePackageManager {
             NodePackageManager::Npm => vec!["list", "-g", "--depth=0"],
             NodePackageManager::Yarn => vec!["global", "list"],
             NodePackageManager::Pnpm => vec!["list", "-g"],
+            NodePackageManager::Bun => vec!["list", "-g"],
         }
     }
 
@@ -46,6 +51,7 @@ impl NodePackageManager {
             NodePackageManager::Npm => vec!["update", "-g"],
             NodePackageManager::Yarn => vec!["global", "upgrade"],
             NodePackageManager::Pnpm => vec!["update", "-g"],
+            NodePackageManager::Bun => vec!["update", "-g"],
         }
     }
 
@@ -54,6 +60,7 @@ impl NodePackageManager {
             "npm" => Ok(NodePackageManager::Npm),
             "yarn" => Ok(NodePackageManager::Yarn),
             "pnpm" => Ok(NodePackageManager::Pnpm),
+            "bun" => Ok(NodePackageManager::Bun),
             _ => anyhow::bail!(
                 "Invalid package manager: {}. Valid options are: npm, yarn, pnpm",
                 s

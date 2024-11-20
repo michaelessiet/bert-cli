@@ -60,6 +60,7 @@ impl Config {
             "npm" => Ok(NodePackageManager::Npm),
             "yarn" => Ok(NodePackageManager::Yarn),
             "pnpm" => Ok(NodePackageManager::Pnpm),
+            "bun" => Ok(NodePackageManager::Bun),
             _ => Ok(NodePackageManager::Npm), // Default to npm if invalid
         }
     }
