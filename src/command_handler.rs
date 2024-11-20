@@ -17,8 +17,15 @@ pub async fn handle_command(args: &[String]) -> Result<()> {
         println!("{} not found. Attempting to install 🐕", command.yellow());
 
         // Try to install via homebrew
-        if let Err(e) = crate::package_manager::install_package(command, false).await {
-            println!("Failed to install {}: {}", command.red(), e);
+        if let Err(e) = crate::package_manager::install_package(command, false, false).await {
+            println!("Failed to install {} with homebrew: {}", command.red(), e);
+            println!("Trying NPM instead 🐕");
+
+            if let Err(e) = crate::package_manager::install_package(command, false, true).await {
+                println!("Failed to install {} with NPM: {}", command.red(), e);
+                anyhow::bail!("Failed to install {}", command);
+            }
+
             return Ok(());
         }
     }

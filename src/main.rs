@@ -1,12 +1,13 @@
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
 use colored::*;
-use std::process::Command;
 
 // Import our local modules
 mod backup_manager;
 mod command_handler;
+mod config;
 mod homebrew;
+mod node;
 mod package_manager;
 mod platform;
 mod self_update;
@@ -28,6 +29,10 @@ struct Cli {
     /// Install as a cask application
     #[arg(long, global = true)]
     cask: bool,
+
+    /// Install a node package globally
+    #[arg(long, global = true)]
+    node: bool,
 
     /// Command to execute if no subcommand is provided
     #[arg(trailing_var_arg = true)]
@@ -67,12 +72,15 @@ enum Commands {
         #[arg(short, long)]
         output: Option<String>,
     },
-
     /// Restore packages from a backup file
     Restore {
         /// Optional path to the backup file (uses latest backup if not specified)
         #[arg(short, long)]
         input: Option<String>,
+    },
+    SetManager {
+        /// Package manager to use (npm, yarn, or pnpm)
+        manager: String,
     },
 }
 #[tokio::main]
@@ -81,10 +89,17 @@ async fn main() -> Result<()> {
     #[cfg(windows)]
     colored::control::set_virtual_terminal(true).ok();
 
+    // Load config at startup
+    let mut config = config::Config::load()?;
+
     let cli = Cli::parse();
 
     match cli.command {
-        // ... other command matches ...
+        Some(Commands::SetManager { manager }) => {
+            let npm_manager = node::NodePackageManager::from_str(&manager)?;
+            config.set_node_package_manager(npm_manager)?;
+            println!("Package manager set to: {}", manager.green());
+        }
         Some(Commands::Backup { output }) => {
             backup_manager::create_backup(output.as_deref()).await?;
         }
@@ -95,7 +110,7 @@ async fn main() -> Result<()> {
             self_update::self_update().await?;
         }
         Some(Commands::Uninstall { package }) => {
-            package_manager::uninstall_package(&package, cli.cask).await?;
+            package_manager::uninstall_package(&package, cli.cask, cli.node).await?;
         }
         Some(Commands::Install { package }) => {
             // Parse package name and version
@@ -105,97 +120,20 @@ async fn main() -> Result<()> {
                 println!("Version: {}", ver.cyan());
             }
 
-            package_manager::install_package_version(name, version, cli.cask)
+            package_manager::install_package_version(name, version, cli.cask, cli.node)
                 .await
                 .with_context(|| format!("Failed to install package: {}", package))?;
         }
         Some(Commands::Search { query }) => {
             println!("Searching for packages matching: {} 🐕", query.cyan());
-            if let Some(formula) = homebrew::search_formula(
-                &query,
-                if cli.cask {
-                    Some(homebrew::HomebrewPackageType::Cask)
-                } else {
-                    Some(homebrew::HomebrewPackageType::Formula)
-                },
-            )
-            .await?
-            {
-                homebrew::display_package_info(&formula, cli.cask);
-            } else {
-                println!("No packages found matching: {}", query.red());
-            }
+            package_manager::search_package(&query, cli.cask, cli.node).await?;
         }
         Some(Commands::Update { packages }) => {
-            if packages.is_empty() {
-                println!("{}", "Updating Homebrew 🐕".cyan());
-                let status = Command::new(if cfg!(windows) { "brew.exe" } else { "brew" })
-                    .arg("update")
-                    .status()?;
-
-                if !status.success() {
-                    println!("{}", "Failed to update Homebrew".red());
-                    return Ok(());
-                }
-                println!("{}", "Homebrew updated successfully".green());
-            }
-
-            let packages_to_update = if packages.is_empty() {
-                // Get list of all installed packages
-                let output = Command::new(if cfg!(windows) { "brew.exe" } else { "brew" })
-                    .args(["list", "--formula"])
-                    .output()?;
-
-                String::from_utf8_lossy(&output.stdout)
-                    .lines()
-                    .map(String::from)
-                    .collect::<Vec<_>>()
-            } else {
-                packages
-            };
-
-            for package in packages_to_update {
-                println!("Updating {} 🐕", package.cyan());
-                let status = Command::new(if cfg!(windows) { "brew.exe" } else { "brew" })
-                    .args(["upgrade", &package])
-                    .status()?;
-
-                if status.success() {
-                    println!("{} updated successfully", package.green());
-                } else {
-                    println!("Failed to update {}", package.red());
-                }
-            }
+            crate::package_manager::update_packages(&packages, cli.node).await?;
         }
         Some(Commands::List) => {
             println!("{}", "Installed packages:".cyan());
-            let formula_output = Command::new(if cfg!(windows) { "brew.exe" } else { "brew" })
-                .args(["list", "--versions", "--formula"])
-                .output()?;
-
-            if formula_output.status.success() {
-                let packages = String::from_utf8_lossy(&formula_output.stdout);
-                println!("{}", "Formulae:".cyan());
-                for package in packages.lines() {
-                    println!("  {}", package);
-                }
-            } else {
-                println!("{}", "Failed to list packages".red());
-            }
-
-            let cask_output = Command::new(if cfg!(windows) { "brew.exe" } else { "brew" })
-                .args(["list", "--versions", "--cask"])
-                .output()?;
-
-            if cask_output.status.success() {
-                let packages = String::from_utf8_lossy(&cask_output.stdout);
-                println!("{}", "Casks:".cyan());
-                for package in packages.lines() {
-                    println!("  {}", package);
-                }
-            } else {
-                println!("{}", "Failed to list casks".red());
-            }
+            package_manager::list_packages(cli.node).await?;
         }
         None => {
             if !cli.args.is_empty() {

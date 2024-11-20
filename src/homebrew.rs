@@ -405,3 +405,77 @@ pub async fn install_formula(name: &str, is_cask: bool) -> Result<()> {
 
     Ok(())
 }
+
+pub async fn uninstall_formula(name: &str, is_cask: bool) -> Result<()> {
+    if !is_homebrew_installed().await {
+        anyhow::bail!("Homebrew is not installed");
+    }
+
+    // First check if the package is installed
+    let installed = Command::new(if cfg!(windows) { "brew.exe" } else { "brew" })
+        .args([
+            "list",
+            "--versions",
+            name,
+            if is_cask { "--cask" } else { "" },
+        ])
+        .output()?;
+
+    if !installed.status.success() || installed.stdout.is_empty() {
+        println!("{} is not installed", name.yellow());
+        return Ok(());
+    }
+
+    // Show current version before uninstalling
+    let version = String::from_utf8_lossy(&installed.stdout);
+    println!("Found installed package: {}", version.trim());
+
+    println!("Uninstalling {}...", name.cyan());
+
+    let status = Command::new(if cfg!(windows) { "brew.exe" } else { "brew" })
+        .args(["uninstall", name, if is_cask { "--cask" } else { "" }])
+        .status()?;
+
+    if !status.success() {
+        anyhow::bail!("Failed to uninstall {}", name);
+    }
+
+    // Run cleanup
+    Command::new(if cfg!(windows) { "brew.exe" } else { "brew" })
+        .args(["cleanup", name])
+        .status()?;
+
+    println!("{} {} successfully", "Uninstalled".green(), name);
+    Ok(())
+}
+
+pub fn list_packages() -> Result<()> {
+    let formula_output = Command::new(if cfg!(windows) { "brew.exe" } else { "brew" })
+        .args(["list", "--versions", "--formula"])
+        .output()?;
+
+    if formula_output.status.success() {
+        let packages = String::from_utf8_lossy(&formula_output.stdout);
+        println!("{}", "Formulae:".cyan());
+        for package in packages.lines() {
+            println!("  {}", package);
+        }
+    } else {
+        println!("{}", "Failed to list packages".red());
+    }
+
+    let cask_output = Command::new(if cfg!(windows) { "brew.exe" } else { "brew" })
+        .args(["list", "--versions", "--cask"])
+        .output()?;
+
+    if cask_output.status.success() {
+        let packages = String::from_utf8_lossy(&cask_output.stdout);
+        println!("{}", "Casks:".cyan());
+        for package in packages.lines() {
+            println!("  {}", package);
+        }
+        Ok(())
+    } else {
+        anyhow::bail!("{}", "Failed to list casks".red());
+    }
+}
