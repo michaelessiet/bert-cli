@@ -29,30 +29,45 @@ Once installed, you can use BERT-CLI from your terminal. Below are some examples
 
 ```bash
 bert install <package_name>
+
+# Installing node packages
+bert install --node typescript
 ```
 
 ### Uninstall a Package
 
 ```bash
 bert uninstall <package_name>
+
+# Uninstalling node packages
+bert uninstall --node typescript
 ```
 
 ### Update Installed Packages
 
 ```bash
 bert update
+
+# Updating node packages
+bert update --node
 ```
 
 ### Search for a Package
 
 ```bash
 bert search <query>
+
+# Updating node packages
+bert search --node typescript
 ```
 
 ### List Installed Packages
 
 ```bash
 bert list
+
+# List node packages
+bert list --node
 ```
 
 ### Install a Cask
