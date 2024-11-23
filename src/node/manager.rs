@@ -1,7 +1,8 @@
 use super::types::*;
 use anyhow::Result;
 use colored::*;
-use std::process::Command;
+use indicatif::{ProgressBar, ProgressStyle};
+use std::{process::Command, thread, time::Duration};
 
 pub struct NodeManager {
     package_manager: NodePackageManager,
@@ -32,20 +33,37 @@ impl NodeManager {
             self.package_manager.command()
         );
 
-        let status = Command::new(self.package_manager.command())
+        let progress_bar = ProgressBar::new(100);
+        let mut child = Command::new(self.package_manager.command())
             .args(&args)
-            .status()?;
+            .stdout(std::process::Stdio::piped())
+            .spawn()?;
 
-        if !status.success() {
-            anyhow::bail!("Failed to install {}", package_with_version);
+        // Create a simple spinner style
+        progress_bar.set_style(ProgressStyle::default_spinner().template("{spinner:.green} {msg}"));
+        progress_bar.set_message(&format!("Installing {}", name));
+
+        while child.try_wait()?.is_none() {
+            progress_bar.tick();
+            thread::sleep(Duration::from_millis(100));
         }
 
-        println!(
-            "{} {} successfully",
-            "Installed".green(),
-            package_with_version
-        );
-        Ok(())
+        // Just wait for the process to complete
+        let status = child.wait()?;
+
+        if status.success() {
+            progress_bar.set_style(ProgressStyle::default_spinner().template("{msg}"));
+            progress_bar.finish_with_message(&format!(
+                "{} Successfully installed {}",
+                "✔".green(),
+                name
+            ));
+            return Ok(());
+        } else {
+            progress_bar.set_style(ProgressStyle::default_spinner().template("{msg}"));
+            progress_bar.finish_with_message(&format!("{} Failed to install {}", "✘".red(), name));
+            anyhow::bail!("Failed to install {}", name);
+        }
     }
 
     pub async fn uninstall_package(&self, name: &str) -> Result<()> {

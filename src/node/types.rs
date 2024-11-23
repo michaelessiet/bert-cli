@@ -6,7 +6,7 @@ pub enum NodePackageManager {
     Npm,
     Yarn,
     Pnpm,
-    Bun
+    Bun,
 }
 
 impl NodePackageManager {

@@ -2,9 +2,12 @@ use crate::platform::Platform;
 use anyhow::Result;
 use colored::*;
 use dialoguer::{theme::ColorfulTheme, Confirm};
+use indicatif::{ProgressBar, ProgressStyle};
 use serde::Deserialize;
 use std::io::Write;
 use std::process::Command;
+use std::thread;
+use std::time::Duration;
 
 #[cfg(target_os = "windows")]
 const HOMEBREW_INSTALL_URL: &str =
@@ -255,16 +258,37 @@ pub async fn install_formula_version(
     if name.matches('/').count() == 2 {
         println!("Installing {} via Homebrew 🐕", name.cyan());
 
-        let status = Command::new(if cfg!(windows) { "brew.exe" } else { "brew" })
+        let progress_bar = ProgressBar::new(100);
+        let mut child = Command::new(if cfg!(windows) { "brew.exe" } else { "brew" })
             .args(["install", name])
-            .status()?;
+            .stdout(std::process::Stdio::piped())
+            .spawn()?;
 
-        if !status.success() {
-            anyhow::bail!("Failed to install {}", name);
+        // Create a simple spinner style
+        progress_bar.set_style(ProgressStyle::default_spinner().template("{spinner:.green} {msg}"));
+        progress_bar.set_message(&format!("Installing {}", name));
+
+        while child.try_wait()?.is_none() {
+            progress_bar.tick();
+            thread::sleep(Duration::from_millis(100));
         }
 
-        println!("{} {} successfully", "Installed".green(), name);
-        return Ok(());
+        // Just wait for the process to complete
+        let status = child.wait()?;
+
+        if status.success() {
+            progress_bar.set_style(ProgressStyle::default_spinner().template("{msg}"));
+            progress_bar.finish_with_message(&format!(
+                "{} Successfully installed {}",
+                "✔".green(),
+                name
+            ));
+            return Ok(());
+        } else {
+            progress_bar.set_style(ProgressStyle::default_spinner().template("{msg}"));
+            progress_bar.finish_with_message(&format!("{} Failed to install {}", "✘".red(), name));
+            anyhow::bail!("Failed to install {}", name);
+        }
     }
 
     // Regular formula installation
@@ -293,20 +317,40 @@ pub async fn install_formula_version(
         };
         args.push(&install_name);
 
-        let status = Command::new(if cfg!(windows) { "brew.exe" } else { "brew" })
-            .args(&args)
-            .status()?;
+        let progress_bar = ProgressBar::new(100);
+        let mut child = Command::new(if cfg!(windows) { "brew.exe" } else { "brew" })
+            .args(["install", name])
+            .stdout(std::process::Stdio::piped())
+            .spawn()?;
 
-        if !status.success() {
-            anyhow::bail!("Failed to install {}", install_name);
+        // Create a simple spinner style
+        progress_bar.set_style(ProgressStyle::default_spinner().template("{spinner:.green} {msg}"));
+        progress_bar.set_message(&format!("Installing {}", name));
+
+        while child.try_wait()?.is_none() {
+            progress_bar.tick();
+            thread::sleep(Duration::from_millis(100));
         }
 
-        println!("{} {} successfully", "Installed".green(), install_name);
+        // Just wait for the process to complete
+        let status = child.wait()?;
+
+        if status.success() {
+            progress_bar.set_style(ProgressStyle::default_spinner().template("{msg}"));
+            progress_bar.finish_with_message(&format!(
+                "{} Successfully installed {}",
+                "✔".green(),
+                name
+            ));
+            return Ok(());
+        } else {
+            progress_bar.set_style(ProgressStyle::default_spinner().template("{msg}"));
+            progress_bar.finish_with_message(&format!("{} Failed to install {}", "✘".red(), name));
+            anyhow::bail!("Failed to install {}", name);
+        }
     } else {
         anyhow::bail!("Package {} not found", name);
     }
-
-    Ok(())
 }
 
 pub async fn search_formula(

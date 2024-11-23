@@ -2,10 +2,7 @@ use anyhow::{Ok, Result};
 use colored::*;
 use std::process::Command;
 
-use crate::{
-    homebrew,
-    node::NodeManager,
-};
+use crate::{homebrew, node::NodeManager};
 
 pub async fn search_package(name: &str, is_cask: bool, is_node: bool) -> Result<()> {
     if is_node {
@@ -68,7 +65,7 @@ pub async fn install_package(package: &str, is_cask: bool, is_node: bool) -> Res
         println!("Version: {}", formula.versions.stable);
 
         crate::homebrew::install_formula(&formula.full_name, is_cask).await?;
-        println!("Successfully installed {}", package.green());
+        // println!("Successfully installed {}", package.green());
     } else {
         println!("Package {} not found in Homebrew", package.red());
     }
@@ -116,7 +113,7 @@ pub async fn install_package_version(
         }
 
         crate::homebrew::install_formula_version(name, version, is_cask).await?;
-        println!("Successfully installed {}", name.green());
+        // println!("Successfully installed {}", name.green());
     } else {
         println!("Package {} not found in Homebrew", name.red());
     }
